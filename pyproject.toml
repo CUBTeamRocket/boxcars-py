@@ -7,6 +7,10 @@ license = "MIT"
 readme = "README.md"
 repository = "https://github.com/SaltieRL/BoxcarWrapper"
 
+packages = [
+         { include = "boxcars_py ", from = "boxcars_py"}
+]
+
 [tool.poetry.dependencies]
 python = "^3.6"
 
@@ -15,7 +19,7 @@ pytest = "^3.5"
 wheel = "*"
 pytest-runner = "*"
 pytest-benchmark = "3.2.3"
-maturin = "0.7.7"
+maturin = "^0.14.2"
 
 [tool.maturin]
 # "extension-module" tells pyo3 we want to build an extension module (skips linking against libpython.so)
