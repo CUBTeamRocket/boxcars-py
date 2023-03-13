@@ -17,6 +17,10 @@ pytest-runner = "*"
 pytest-benchmark = "3.2.3"
 maturin = "0.7.7"
 
+[tool.maturin]
+# "extension-module" tells pyo3 we want to build an extension module (skips linking against libpython.so)
+features = ["pyo3/extension-module"]
+
 [build-system]
-requires = ["poetry-core>=1.0.0"]
-build-backend = "poetry.core.masonry.api"
+requires = ["maturin>=0.14,<0.15"]
+build-backend = "maturin"
