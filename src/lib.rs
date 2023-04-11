@@ -78,6 +78,7 @@ fn get_replay_meta_and_numpy_ndarray<'p>(py: Python<'p>, filepath: PathBuf) -> P
     Ok((python_replay_meta, python_nd_array).into_py(py))
 }
 
+#[pyfunction]
 fn get_replay_meta<'p>(py: Python<'p>, filepath: PathBuf) -> PyResult<PyObject> {
     let data = std::fs::read(filepath.as_path()).map_err(to_py_error)?;
     let replay = replay_from_data(&data)?;
