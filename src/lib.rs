@@ -66,6 +66,14 @@ fn get_numpy_ndarray<'p>(py: Python<'p>, filepath: PathBuf) -> PyResult<PyObject
     let collector = boxcars_frames::NDArrayCollector::<f32>::with_jump_availabilities()
         .process_replay(&replay)
         .map_err(handle_frames_exception)?;
-    let rust_nd_array = collector.get_ndarray().map_err(handle_frames_exception)?;
-    Ok(rust_nd_array.into_pyarray(py).into_py(py))
+    let (player_order, rust_nd_array) = collector
+        .get_meta_and_ndarray()
+        .map_err(handle_frames_exception)?;
+    let player_order = convert_to_py(
+        py,
+        &serde_json::to_value(player_order).map_err(to_py_error)?,
+    );
+    let python_nd_array = rust_nd_array.into_pyarray(py);
+    // Ok((player_order, )
+    Ok((player_order, python_nd_array).into_py(py))
 }
