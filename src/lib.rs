@@ -24,7 +24,7 @@ fn replay_from_data(data: &[u8]) -> PyResult<boxcars::Replay> {
 #[pymodule]
 fn boxcars_py(_py: Python, m: &PyModule) -> PyResult<()> {
     m.add_wrapped(wrap_pyfunction!(parse_replay))?;
-    m.add_wrapped(wrap_pyfunction!(get_player_order_and_numpy_ndarray))?;
+    m.add_wrapped(wrap_pyfunction!(get_replay_meta_and_numpy_ndarray))?;
     Ok(())
 }
 
@@ -58,7 +58,7 @@ fn convert_to_py(py: Python, value: &Value) -> PyObject {
 }
 
 #[pyfunction]
-fn get_player_order_and_numpy_ndarray<'p>(py: Python<'p>, filepath: PathBuf) -> PyResult<PyObject> {
+fn get_replay_meta_and_numpy_ndarray<'p>(py: Python<'p>, filepath: PathBuf) -> PyResult<PyObject> {
     let data = std::fs::read(filepath.as_path()).map_err(to_py_error)?;
     let replay = replay_from_data(&data)?;
 
@@ -66,11 +66,28 @@ fn get_player_order_and_numpy_ndarray<'p>(py: Python<'p>, filepath: PathBuf) -> 
     let collector = boxcars_frames::NDArrayCollector::<f32>::with_jump_availabilities()
         .process_replay(&replay)
         .map_err(handle_frames_exception)?;
-    let (game_meta, rust_nd_array) = collector
+    let (replay_meta, rust_nd_array) = collector
         .get_meta_and_ndarray()
         .map_err(handle_frames_exception)?;
-    let python_game_meta =
-        convert_to_py(py, &serde_json::to_value(game_meta).map_err(to_py_error)?);
+    let python_replay_meta = convert_to_py(
+        py,
+        &serde_json::to_value(&replay_meta).map_err(to_py_error)?,
+    );
     let python_nd_array = rust_nd_array.into_pyarray(py);
-    Ok((python_game_meta, python_nd_array).into_py(py))
+    Ok((python_replay_meta, python_nd_array).into_py(py))
+}
+
+fn get_replay_meta<'p>(py: Python<'p>, filepath: PathBuf) -> PyResult<PyObject> {
+    let data = std::fs::read(filepath.as_path()).map_err(to_py_error)?;
+    let replay = replay_from_data(&data)?;
+
+    let processor = boxcars_frames::ReplayProcessor::new(&replay);
+
+    let replay_meta = processor
+        .get_replay_meta()
+        .map_err(PyErr::new::<exceptions::PyException, _>)?;
+    Ok(convert_to_py(
+        py,
+        &serde_json::to_value(&replay_meta).map_err(to_py_error)?,
+    ))
 }

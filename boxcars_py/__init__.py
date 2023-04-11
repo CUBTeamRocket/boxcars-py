@@ -1,1 +1,1 @@
-from .boxcars_py import parse_replay, get_player_order_and_numpy_ndarray
+from .boxcars_py import parse_replay, get_replay_meta_and_numpy_ndarray, get_replay_meta
