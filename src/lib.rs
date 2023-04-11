@@ -66,14 +66,10 @@ fn get_player_order_and_numpy_ndarray<'p>(py: Python<'p>, filepath: PathBuf) -> 
     let collector = boxcars_frames::NDArrayCollector::<f32>::with_jump_availabilities()
         .process_replay(&replay)
         .map_err(handle_frames_exception)?;
-    let (player_order, rust_nd_array) = collector
+    let (game_meta, rust_nd_array) = collector
         .get_meta_and_ndarray()
         .map_err(handle_frames_exception)?;
-    let player_order = convert_to_py(
-        py,
-        &serde_json::to_value(player_order).map_err(to_py_error)?,
-    );
+    let game_meta = convert_to_py(py, &serde_json::to_value(game_meta).map_err(to_py_error)?);
     let python_nd_array = rust_nd_array.into_pyarray(py);
-    // Ok((player_order, )
-    Ok((player_order, python_nd_array).into_py(py))
+    Ok((game_meta, python_nd_array).into_py(py))
 }
