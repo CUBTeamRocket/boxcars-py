@@ -69,7 +69,8 @@ fn get_player_order_and_numpy_ndarray<'p>(py: Python<'p>, filepath: PathBuf) -> 
     let (game_meta, rust_nd_array) = collector
         .get_meta_and_ndarray()
         .map_err(handle_frames_exception)?;
-    let game_meta = convert_to_py(py, &serde_json::to_value(game_meta).map_err(to_py_error)?);
+    let python_game_meta =
+        convert_to_py(py, &serde_json::to_value(game_meta).map_err(to_py_error)?);
     let python_nd_array = rust_nd_array.into_pyarray(py);
-    Ok((game_meta, python_nd_array).into_py(py))
+    Ok((python_game_meta, python_nd_array).into_py(py))
 }
