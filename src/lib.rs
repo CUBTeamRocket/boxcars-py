@@ -24,7 +24,7 @@ fn replay_from_data(data: &[u8]) -> PyResult<boxcars::Replay> {
 #[pymodule]
 fn boxcars_py(_py: Python, m: &PyModule) -> PyResult<()> {
     m.add_wrapped(wrap_pyfunction!(parse_replay))?;
-    m.add_wrapped(wrap_pyfunction!(get_numpy_ndarray))?;
+    m.add_wrapped(wrap_pyfunction!(get_player_order_and_numpy_ndarray))?;
     Ok(())
 }
 
@@ -58,7 +58,7 @@ fn convert_to_py(py: Python, value: &Value) -> PyObject {
 }
 
 #[pyfunction]
-fn get_numpy_ndarray<'p>(py: Python<'p>, filepath: PathBuf) -> PyResult<PyObject> {
+fn get_player_order_and_numpy_ndarray<'p>(py: Python<'p>, filepath: PathBuf) -> PyResult<PyObject> {
     let data = std::fs::read(filepath.as_path()).map_err(to_py_error)?;
     let replay = replay_from_data(&data)?;
 

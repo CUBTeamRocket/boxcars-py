@@ -2,5 +2,5 @@ def parse_replay(data: bytes):
     ...
 
 
-def get_numpy_ndarray(filepath: str):
+def get_player_order_and_numpy_ndarray(filepath: str):
     ...
