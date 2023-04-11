@@ -1,23 +1,30 @@
+use boxcars_frames::Collector;
+use numpy::pyo3::IntoPy;
+use numpy::IntoPyArray;
 use pyo3::prelude::*;
 use pyo3::{exceptions, wrap_pyfunction};
 use serde_json::Value;
 use std::collections::BTreeMap;
+use std::path::PathBuf;
 
 #[pyfunction]
 fn parse_replay<'p>(py: Python<'p>, data: &[u8]) -> PyResult<PyObject> {
-    let replay = boxcars::ParserBuilder::new(data)
+    let replay = serde_json::to_value(replay_from_data(data)?).map_err(to_py_error)?;
+    Ok(convert_to_py(py, &replay))
+}
+
+fn replay_from_data(data: &[u8]) -> PyResult<boxcars::Replay> {
+    boxcars::ParserBuilder::new(data)
         .must_parse_network_data()
         .on_error_check_crc()
         .parse()
-        .map_err(to_py_error)?;
-    let replay = serde_json::to_value(replay).map_err(to_py_error)?;
-    let replay = convert_to_py(py, &replay);
-    Ok(replay)
+        .map_err(to_py_error)
 }
 
 #[pymodule]
 fn boxcars_py(_py: Python, m: &PyModule) -> PyResult<()> {
     m.add_wrapped(wrap_pyfunction!(parse_replay))?;
+    m.add_wrapped(wrap_pyfunction!(get_numpy_ndarray))?;
     Ok(())
 }
 
@@ -48,4 +55,17 @@ fn convert_to_py(py: Python, value: &Value) -> PyObject {
             map.into_py(py)
         }
     }
+}
+
+#[pyfunction]
+fn get_numpy_ndarray<'p>(py: Python<'p>, filepath: PathBuf) -> PyResult<PyObject> {
+    let data = std::fs::read(filepath.as_path()).map_err(to_py_error)?;
+    let replay = replay_from_data(&data)?;
+
+    let handle_frames_exception = PyErr::new::<exceptions::PyException, _>;
+    let collector = boxcars_frames::NDArrayCollector::<f32>::with_jump_availabilities()
+        .process_replay(&replay)
+        .map_err(handle_frames_exception)?;
+    let rust_nd_array = collector.get_ndarray().map_err(handle_frames_exception)?;
+    Ok(rust_nd_array.into_pyarray(py).into_py(py))
 }

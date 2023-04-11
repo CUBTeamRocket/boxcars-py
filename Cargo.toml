@@ -1,15 +1,17 @@
 [package]
 name = "boxcars-py"
 version = "0.1.15"
-authors = ["Justus K <justus.k@protonmail.com>", "Matthew Mage <sciguymjm@gmail.com>"]
+authors = ["Ivan Malison <IvanMalison@gmail.com>", "Justus K <justus.k@protonmail.com>", "Matthew Mage <sciguymjm@gmail.com>"]
 edition = "2018"
 
 [dependencies]
-boxcars = "0.9.8"
+boxcars = { git = "https://github.com/IvanMalison/boxcars.git" }
+boxcars-frames = { git = "https://github.com/CUBTeamRocket/boxcar-frames.git" }
+numpy = "0.18.0"
 serde_json = "1.0.52"
 
 [dependencies.pyo3]
-version = "0.13.0"
+version = "0.18.2"
 features = ["extension-module"]
 
 [lib]

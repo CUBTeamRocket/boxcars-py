@@ -1,2 +1,6 @@
 def parse_replay(data: bytes):
     ...
+
+
+def get_numpy_ndarray(filepath: str):
+    ...
