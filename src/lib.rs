@@ -33,6 +33,10 @@ fn to_py_error<E: std::error::Error>(e: E) -> PyErr {
     PyErr::new::<exceptions::PyException, _>(format!("{}", e))
 }
 
+fn handle_frames_exception(e: String) -> PyErr {
+    PyErr::new::<exceptions::PyException, _>(e)
+}
+
 fn convert_to_py(py: Python, value: &Value) -> PyObject {
     match value {
         Value::Null => py.None(),
@@ -63,7 +67,6 @@ fn get_replay_meta_and_numpy_ndarray<'p>(py: Python<'p>, filepath: PathBuf) -> P
     let data = std::fs::read(filepath.as_path()).map_err(to_py_error)?;
     let replay = replay_from_data(&data)?;
 
-    let handle_frames_exception = PyErr::new::<exceptions::PyException, _>;
     let collector = boxcars_frames::NDArrayCollector::<f32>::with_jump_availabilities()
         .process_replay(&replay)
         .map_err(handle_frames_exception)?;
@@ -83,7 +86,8 @@ fn get_replay_meta<'p>(py: Python<'p>, filepath: PathBuf) -> PyResult<PyObject> 
     let data = std::fs::read(filepath.as_path()).map_err(to_py_error)?;
     let replay = replay_from_data(&data)?;
 
-    let processor = boxcars_frames::ReplayProcessor::new(&replay);
+    let processor =
+        boxcars_frames::ReplayProcessor::new(&replay).map_err(handle_frames_exception)?;
 
     let replay_meta = processor
         .get_replay_meta()
