@@ -86,11 +86,11 @@ fn get_replay_meta<'p>(py: Python<'p>, filepath: PathBuf) -> PyResult<PyObject> 
     let data = std::fs::read(filepath.as_path()).map_err(to_py_error)?;
     let replay = replay_from_data(&data)?;
 
-    let processor =
+    let mut processor =
         boxcars_frames::ReplayProcessor::new(&replay).map_err(handle_frames_exception)?;
 
     let replay_meta = processor
-        .get_replay_meta()
+        .process_and_get_replay_meta()
         .map_err(PyErr::new::<exceptions::PyException, _>)?;
     Ok(convert_to_py(
         py,
