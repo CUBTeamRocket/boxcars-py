@@ -24,7 +24,7 @@ fn replay_from_data(data: &[u8]) -> PyResult<boxcars::Replay> {
 #[pymodule]
 fn boxcars_py(_py: Python, m: &PyModule) -> PyResult<()> {
     m.add_wrapped(wrap_pyfunction!(parse_replay))?;
-    m.add_wrapped(wrap_pyfunction!(get_replay_meta_and_numpy_ndarray))?;
+    m.add_wrapped(wrap_pyfunction!(get_replay_meta_and_column_headers_and_numpy_ndarray))?;
     m.add_wrapped(wrap_pyfunction!(get_replay_meta))?;
     Ok(())
 }
@@ -62,24 +62,36 @@ fn convert_to_py(py: Python, value: &Value) -> PyObject {
     }
 }
 
+// basically, go triple all the values
 #[pyfunction]
-fn get_replay_meta_and_numpy_ndarray<'p>(py: Python<'p>, filepath: PathBuf) -> PyResult<PyObject> {
+fn get_replay_meta_and_column_headers_and_numpy_ndarray<'p>(py: Python<'p>, filepath: PathBuf) -> PyResult<PyObject> {
     let data = std::fs::read(filepath.as_path()).map_err(to_py_error)?;
     let replay = replay_from_data(&data)?;
 
     let collector = boxcars_frames::NDArrayCollector::<f32>::with_jump_availabilities()
         .process_replay(&replay)
         .map_err(handle_frames_exception)?;
-    let (replay_meta, rust_nd_array) = collector
+    let (replay_meta, column_headers, rust_nd_array) = collector
+    // this is three values now with column headers
         .get_meta_and_ndarray()
         .map_err(handle_frames_exception)?;
+    // have a headers too
     let python_replay_meta = convert_to_py(
         py,
         &serde_json::to_value(&replay_meta).map_err(to_py_error)?,
     );
+
+    let python_column_headers = convert_to_py(
+        py,
+        &serde_json::to_value(&column_headers).map_err(to_py_error)?,
+    );
+
     let python_nd_array = rust_nd_array.into_pyarray(py);
-    Ok((python_replay_meta, python_nd_array).into_py(py))
+    // column headers in between here
+    Ok((python_replay_meta, python_column_headers, python_nd_array).into_py(py))
 }
+
+// fn get_replay_meta_and_column_names_and_numpy_ndarray
 
 #[pyfunction]
 fn get_replay_meta<'p>(py: Python<'p>, filepath: PathBuf) -> PyResult<PyObject> {
