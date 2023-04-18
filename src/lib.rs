@@ -24,7 +24,7 @@ fn replay_from_data(data: &[u8]) -> PyResult<boxcars::Replay> {
 #[pymodule]
 fn boxcars_py(_py: Python, m: &PyModule) -> PyResult<()> {
     m.add_wrapped(wrap_pyfunction!(parse_replay))?;
-    m.add_wrapped(wrap_pyfunction!(get_replay_meta_and_column_headers_and_numpy_ndarray))?;
+    m.add_wrapped(wrap_pyfunction!(get_ndarray_with_info_from_replay_filepath))?;
     m.add_wrapped(wrap_pyfunction!(get_replay_meta))?;
     Ok(())
 }
@@ -64,7 +64,10 @@ fn convert_to_py(py: Python, value: &Value) -> PyObject {
 
 // basically, go triple all the values
 #[pyfunction]
-fn get_replay_meta_and_column_headers_and_numpy_ndarray<'p>(py: Python<'p>, filepath: PathBuf) -> PyResult<PyObject> {
+fn get_ndarray_with_info_from_replay_filepath<'p>(
+    py: Python<'p>,
+    filepath: PathBuf,
+) -> PyResult<PyObject> {
     let data = std::fs::read(filepath.as_path()).map_err(to_py_error)?;
     let replay = replay_from_data(&data)?;
 
@@ -72,7 +75,7 @@ fn get_replay_meta_and_column_headers_and_numpy_ndarray<'p>(py: Python<'p>, file
         .process_replay(&replay)
         .map_err(handle_frames_exception)?;
     let (replay_meta, column_headers, rust_nd_array) = collector
-    // this is three values now with column headers
+        // this is three values now with column headers
         .get_meta_and_ndarray()
         .map_err(handle_frames_exception)?;
     // have a headers too
