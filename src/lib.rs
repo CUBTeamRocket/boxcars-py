@@ -1,4 +1,4 @@
-use boxcars_frames::Collector;
+use boxcars_frames::*;
 use numpy::pyo3::IntoPy;
 use numpy::IntoPyArray;
 use pyo3::prelude::*;
@@ -62,51 +62,80 @@ fn convert_to_py(py: Python, value: &Value) -> PyObject {
     }
 }
 
-// basically, go triple all the values
+pub static DEFAULT_GLOBAL_FEATURE_ADDERS: [&str; 1] = ["BallRigidBody"];
+
+pub static DEFAULT_PLAYER_FEATURE_ADDERS: [&str; 3] =
+    ["PlayerRigidBody", "PlayerBoost", "PlayerAnyJump"];
+
 #[pyfunction]
 fn get_ndarray_with_info_from_replay_filepath<'p>(
     py: Python<'p>,
     filepath: PathBuf,
+    global_feature_adders: Option<Vec<String>>,
+    player_feature_adders: Option<Vec<String>>,
+    fps: Option<f32>,
 ) -> PyResult<PyObject> {
     let data = std::fs::read(filepath.as_path()).map_err(to_py_error)?;
     let replay = replay_from_data(&data)?;
 
-    let collector = boxcars_frames::NDArrayCollector::<f32>::with_jump_availabilities()
+    let mut collector = build_ndarray_collector(global_feature_adders, player_feature_adders)
+        .map_err(handle_frames_exception)?;
+
+    FrameRateDecorator::new_from_fps(fps.unwrap_or(10.0), &mut collector)
         .process_replay(&replay)
         .map_err(handle_frames_exception)?;
-    let (replay_meta, column_headers, rust_nd_array) = collector
-        // this is three values now with column headers
+
+    let (replay_meta_with_headers, rust_nd_array) = collector
         .get_meta_and_ndarray()
         .map_err(handle_frames_exception)?;
-    // have a headers too
+
     let python_replay_meta = convert_to_py(
         py,
-        &serde_json::to_value(&replay_meta).map_err(to_py_error)?,
-    );
-
-    let python_column_headers = convert_to_py(
-        py,
-        &serde_json::to_value(&column_headers).map_err(to_py_error)?,
+        &serde_json::to_value(&replay_meta_with_headers).map_err(to_py_error)?,
     );
 
     let python_nd_array = rust_nd_array.into_pyarray(py);
-    // column headers in between here
-    Ok((python_replay_meta, python_column_headers, python_nd_array).into_py(py))
+    Ok((python_replay_meta, python_nd_array).into_py(py))
 }
 
-// fn get_replay_meta_and_column_names_and_numpy_ndarray
+fn build_ndarray_collector(
+    global_feature_adders: Option<Vec<String>>,
+    player_feature_adders: Option<Vec<String>>,
+) -> Result<boxcars_frames::NDArrayCollector<f32>, String> {
+    let global_feature_adders = global_feature_adders.unwrap_or_else(|| {
+        DEFAULT_GLOBAL_FEATURE_ADDERS
+            .iter()
+            .map(|i| i.to_string())
+            .collect()
+    });
+    let player_feature_adders = player_feature_adders.unwrap_or_else(|| {
+        DEFAULT_PLAYER_FEATURE_ADDERS
+            .iter()
+            .map(|i| i.to_string())
+            .collect()
+    });
+    let global_feature_adders: Vec<&str> = global_feature_adders.iter().map(|s| &s[..]).collect();
+    let player_feature_adders: Vec<&str> = player_feature_adders.iter().map(|s| &s[..]).collect();
+    boxcars_frames::NDArrayCollector::<f32>::from_strings(
+        &global_feature_adders,
+        &player_feature_adders,
+    )
+}
 
 #[pyfunction]
-fn get_replay_meta<'p>(py: Python<'p>, filepath: PathBuf) -> PyResult<PyObject> {
+fn get_replay_meta<'p>(
+    py: Python<'p>,
+    filepath: PathBuf,
+    global_feature_adders: Option<Vec<String>>,
+    player_feature_adders: Option<Vec<String>>,
+) -> PyResult<PyObject> {
     let data = std::fs::read(filepath.as_path()).map_err(to_py_error)?;
     let replay = replay_from_data(&data)?;
 
-    let mut processor =
-        boxcars_frames::ReplayProcessor::new(&replay).map_err(handle_frames_exception)?;
+    let mut collector = build_ndarray_collector(global_feature_adders, player_feature_adders)
+        .map_err(handle_frames_exception)?;
 
-    let replay_meta = processor
-        .process_and_get_replay_meta()
-        .map_err(PyErr::new::<exceptions::PyException, _>)?;
+    let replay_meta = collector.process_and_get_meta_and_headers(&replay);
     Ok(convert_to_py(
         py,
         &serde_json::to_value(&replay_meta).map_err(to_py_error)?,
