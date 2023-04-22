@@ -1,1 +1,1 @@
-from .boxcars_py import parse_replay, get_ndarray_with_info_from_replay_filepath, get_replay_meta
+from .boxcars_py import parse_replay, get_ndarray_with_info_from_replay_filepath, get_replay_meta, get_column_headers
