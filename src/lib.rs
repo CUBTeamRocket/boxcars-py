@@ -27,6 +27,7 @@ fn boxcars_py(_py: Python, m: &PyModule) -> PyResult<()> {
     m.add_wrapped(wrap_pyfunction!(get_ndarray_with_info_from_replay_filepath))?;
     m.add_wrapped(wrap_pyfunction!(get_replay_meta))?;
     m.add_wrapped(wrap_pyfunction!(get_column_headers))?;
+    m.add_wrapped(wrap_pyfunction!(get_replay_frames_data))?;
     Ok(())
 }
 
@@ -155,5 +156,20 @@ fn get_column_headers<'p>(
     Ok(convert_to_py(
         py,
         &serde_json::to_value(&header_info).map_err(to_py_error)?,
+    ))
+}
+
+#[pyfunction]
+fn get_replay_frames_data<'p>(py: Python<'p>, filepath: PathBuf) -> PyResult<PyObject> {
+    let data = std::fs::read(filepath.as_path()).map_err(to_py_error)?;
+    let replay = replay_from_data(&data)?;
+
+    let replay_data = boxcars_frames::FrameDataCollector::new()
+        .get_replay_data(&replay)
+        .map_err(handle_frames_exception)?;
+
+    Ok(convert_to_py(
+        py,
+        &serde_json::to_value(replay_data).map_err(to_py_error)?,
     ))
 }

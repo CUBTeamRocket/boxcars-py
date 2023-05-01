@@ -13,3 +13,7 @@ def get_replay_meta(filepath: str, global_feature_adders=None, player_feature_ad
 
 def get_column_headers(global_feature_adders=None, player_feature_adders=None):
     ...
+
+
+def get_replay_frames_data(filepath: str):
+    ...
