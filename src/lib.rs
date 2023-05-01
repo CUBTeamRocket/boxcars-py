@@ -164,7 +164,7 @@ fn get_replay_frames_data<'p>(py: Python<'p>, filepath: PathBuf) -> PyResult<PyO
     let data = std::fs::read(filepath.as_path()).map_err(to_py_error)?;
     let replay = replay_from_data(&data)?;
 
-    let replay_data = boxcars_frames::FrameDataCollector::new()
+    let replay_data = boxcars_frames::ReplayDataCollector::new()
         .get_replay_data(&replay)
         .map_err(handle_frames_exception)?;
 
