@@ -6,7 +6,7 @@ edition = "2018"
 
 [dependencies]
 boxcars = "0.9.9"
-boxcars-frames = { git = "https://github.com/CUBTeamRocket/boxcar-frames.git" }
+subtr-actor = { git = "https://github.com/rlrml/subtr-actor.git" }
 numpy = "0.18.0"
 serde_json = "1.0.52"
 
