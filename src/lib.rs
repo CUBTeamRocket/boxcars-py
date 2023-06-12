@@ -36,7 +36,7 @@ fn to_py_error<E: std::error::Error>(e: E) -> PyErr {
 }
 
 fn handle_frames_exception(e: boxcars_frames::BoxcarsError) -> PyErr {
-    PyErr::new::<exceptions::PyException, _>(format!("{:?}", e.variant))
+    PyErr::new::<exceptions::PyException, _>(format!("{:?} {}", e.variant, e.backtrace.to_string()))
 }
 
 fn convert_to_py(py: Python, value: &Value) -> PyObject {
