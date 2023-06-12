@@ -5,7 +5,7 @@ authors = ["Ivan Malison <IvanMalison@gmail.com>", "Justus K <justus.k@protonmai
 edition = "2018"
 
 [dependencies]
-boxcars = { git = "https://github.com/IvanMalison/boxcars.git" }
+boxcars = "0.9.9"
 boxcars-frames = { git = "https://github.com/CUBTeamRocket/boxcar-frames.git" }
 numpy = "0.18.0"
 serde_json = "1.0.52"

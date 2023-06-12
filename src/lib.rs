@@ -35,8 +35,8 @@ fn to_py_error<E: std::error::Error>(e: E) -> PyErr {
     PyErr::new::<exceptions::PyException, _>(format!("{}", e))
 }
 
-fn handle_frames_exception(e: String) -> PyErr {
-    PyErr::new::<exceptions::PyException, _>(e)
+fn handle_frames_exception(e: boxcars_frames::BoxcarsError) -> PyErr {
+    PyErr::new::<exceptions::PyException, _>(format!("{:?}", e.variant))
 }
 
 fn convert_to_py(py: Python, value: &Value) -> PyObject {
@@ -103,7 +103,7 @@ fn get_ndarray_with_info_from_replay_filepath<'p>(
 fn build_ndarray_collector(
     global_feature_adders: Option<Vec<String>>,
     player_feature_adders: Option<Vec<String>>,
-) -> Result<boxcars_frames::NDArrayCollector<f32>, String> {
+) -> Result<boxcars_frames::NDArrayCollector<f32>, boxcars_frames::BoxcarsError> {
     let global_feature_adders = global_feature_adders.unwrap_or_else(|| {
         DEFAULT_GLOBAL_FEATURE_ADDERS
             .iter()
@@ -137,7 +137,10 @@ fn get_replay_meta<'p>(
     let mut collector = build_ndarray_collector(global_feature_adders, player_feature_adders)
         .map_err(handle_frames_exception)?;
 
-    let replay_meta = collector.process_and_get_meta_and_headers(&replay);
+    let replay_meta = collector
+        .process_and_get_meta_and_headers(&replay)
+        .map_err(handle_frames_exception)?;
+
     Ok(convert_to_py(
         py,
         &serde_json::to_value(&replay_meta).map_err(to_py_error)?,
