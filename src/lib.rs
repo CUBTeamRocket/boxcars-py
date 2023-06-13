@@ -103,7 +103,7 @@ fn get_ndarray_with_info_from_replay_filepath<'p>(
 fn build_ndarray_collector(
     global_feature_adders: Option<Vec<String>>,
     player_feature_adders: Option<Vec<String>>,
-) -> Result<subtr_actor::NDArrayCollector<f32>, subtr_actor::SubtrActorError> {
+) -> subtr_actor::SubtrActorResult<subtr_actor::NDArrayCollector<f32>> {
     let global_feature_adders = global_feature_adders.unwrap_or_else(|| {
         DEFAULT_GLOBAL_FEATURE_ADDERS
             .iter()
